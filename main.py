@@ -9,7 +9,7 @@ except ImportError:
 import time
 
 import proton
-from proton.reactor import Container, AtMostOnce
+from proton.reactor import Container, AtMostOnce, EventInjector, ApplicationEvent
 from proton.handlers import MessagingHandler
 
 
@@ -56,6 +56,7 @@ class ChatMesssenger(MessagingHandler):
         self.sender_address = sender_address
         self.receiver_address = receiver_address
 
+        self.events = EventInjector()
         self.sender = None
 
         self.ready_to_send = False
@@ -63,6 +64,7 @@ class ChatMesssenger(MessagingHandler):
 
     def on_start(self, event):
         print('on_start')
+        event.container.selectable(self.events)
         event.container.create_receiver(self.receiver_address)
         event.container.create_sender(self.sender_address, options=AtMostOnce())
 
@@ -70,7 +72,7 @@ class ChatMesssenger(MessagingHandler):
         print('on_sendable')
         self.sender = event.sender
         self.ready_to_send = True
-        self.send_messages()
+        self.on_message_to_send()
         # TODO: ??? I cannot send my messages from on_sendable because I do not always have something to send here
         # and if I miss one on_sendable and do not send anything, it will not be called again the next time
 
@@ -78,7 +80,7 @@ class ChatMesssenger(MessagingHandler):
         print("on_message")
         self.gui.receive_message(str(event.message.body))
 
-    def send_messages(self):
+    def on_message_to_send(self, _=None):
         if not self.ready_to_send:
             return
 
@@ -94,7 +96,7 @@ class ChatMesssenger(MessagingHandler):
 
     def send_message(self, body):
         self.outgoing_queue.put(body)
-        self.send_messages()
+        self.events.trigger(ApplicationEvent('message_to_send'))
 
 
 class GuiThread(threading.Thread):
