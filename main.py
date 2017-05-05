@@ -1,7 +1,10 @@
 #!/usr/bin/env python2
 import threading
-from multiprocessing.queues import Queue
-from Tkinter import *
+from multiprocessing import Queue
+try:
+    from Tkinter import *
+except ImportError:
+    from tkinter import *
 
 import time
 

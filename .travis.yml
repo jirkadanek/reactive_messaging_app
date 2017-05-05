@@ -1,0 +1,19 @@
+os: linux
+dist: trusty
+sudo: true
+language: python
+python:
+- 2.7
+- 3.5
+env:
+  global:
+  - "IMAGE_TAG=10-6a1e663"
+install:
+- pip install -r requirements.txt
+before_script:
+- docker pull jdanekrh/dispatch-router:${IMAGE_TAG}
+- docker run -d -p 127.0.0.1:5672:5672 jdanekrh/dispatch-router:${IMAGE_TAG} qdrouterd
+- docker ps -a
+- sleep 3
+script:
+- python -m unittest discover
